@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+    <meta "Content-Type:html/txt;charset=utf-8">
+	<script src="aes.js"></script>
+	<script src="sha256.js"></script>
+	<script src="Base64.js"></script>
+	<script src="pad-zeropadding-min.js"></script>
+	<script src="encrypt.js"></script>
+
+	<script type="text/javascript" src="RSA.js"></script>
+	<script type="text/javascript" src="BigInt.js"></script>
+	<script type="text/javascript" src="Barrett.js"></script>
+	
+	<script src="components/core-min.js"></script>
+	<script src="components/cipher-core-min.js"></script>  
+	<script src="components/mode-ecb-min.js"></script>  
+	<script src="rollups/aes.js"></script> 
+	
+</head>
+
+<body>
+<div style="width:1000px;">
+    <hr style="height:10px;width:1000px;border:none;border-top:5px ridge green;" />
+	<textarea id="content" rows="5" cols="120"></textarea>
+	<input type="button" value="参数AES加密" onclick="javascript:getsong()"/>
+	<input type="button" value="清空" onclick="javascript:getElementById('content').value=''"/></br>
+	<textarea id="param3" rows="5" cols="120"></textarea>
+	<input type="button" value="清空" onclick="javascript:getElementById('param3').value=''"/>
+	<textarea id="encKey" rows="10" cols="120"></textarea>
+	<br/>
+	<br/>
+	<hr style="height:10px;width:1000px;border:none;border-top:5px ridge red;" >
+	<br/>
+	<br/>
+	<textarea id="response" rows="10" cols="120"></textarea>
+	<input type="button" value="AES解密" onclick="javascript:decrypt()"/>
+	<input type="button" value="清空" onclick="javascript:getElementById('response').value=''"/>
+	
+	<textarea id="decrypt" rows="10" cols="120"></textarea>
+
+</div>
+<script type="text/javascript">
+
+function createSecretKey(size) {
+    var keys = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    var key = "";
+    for (var i = 0; i < size; i++) {
+        var pos = Math.random() * keys.length;
+        pos = Math.floor(pos);
+        key = key + keys.charAt(pos)
+    }
+    return key;
+}
+
+
+
+var modulus = '00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7';
+
+var secKey;
+	 function getsong(){
+
+		var keyword = document.getElementById('content').value;
+		var params = {
+			s: keyword,
+			type: 1,
+			limit: 20,
+			offset:0
+		};
+		secKey = createSecretKey(16);
+		var pubKey = '010001';
+		var nonce = '0CoJUm6Qyw8W8jud';
+		
+		var paramsJson = JSON.stringify(params);
+		console.log(paramsJson);
+		
+		var first = aesEncryptForNetease(paramsJson,nonce);
+		var key = 'Bdi2wLPp4kgVr6Cb';
+		var res = aesEncryptForNetease(first,secKey);
+	
+		var encSeckey =  encKey(secKey);
+
+		document.getElementById('param3').value=res;
+		
+		var url = 'http://music.163.com/weapi/cloudsearch/get/web?csrf_token=';
+		var params ="params="+res+"&encSeckey="+encSeckey;
+		ajaxPost(url,params,onsuccess,onfail,null);
+		
+		
+		
+		document.getElementById('encKey').value=encSeckey;
+		}
+		
+		function encKey(paramStr){
+			setMaxDigits(130);
+			//第一个参数为加密指数、第二个参数为解密参数、第三个参数为加密系数
+			key = new RSAKeyPair("010001", "", modulus); 
+			//返回加密后的字符串
+			return encryptedString(key, encodeURIComponent(paramStr));
+			}
+		
+
+		
+		
+		
+	function decrypt(){
+		var con = document.getElementById('response').value;
+		//var secKey = createSecretKey(16);
+		var nonce = '0CoJUm6Qyw8W8jud';
+		//加密方法
+		//asd = AESEncrypt(data);
+		//bsd = encrypt(data);
+		var key = 'Bdi2wLPp4kgVr6Cb';
+		var first = aesDecryptForNetease(con,secKey);
+		//console.log(secKey);
+	
+		var res = aesDecryptForNetease(first,nonce);
+	
+		
+		document.getElementById('decrypt').value=res;
+		}	
+		
+		
+	var onsuccess = function (res){
+		document.getElementById('decrypt').value=res;
+	}	
+		
+	var onfail =  function (res){
+		document.getElementById('decrypt').value=res;
+	}	
+	
+		
+function ajaxPost ( url , data , fnSucceed , fnFail , fnLoading ) {
+    var ajax = ajaxObject();
+    ajax.open( "post" , url , true );
+	ajax.setRequestHeader("Host","http://music.163.com");
+	ajax.setRequestHeader("Referer","http://music.163.com");
+    ajax.setRequestHeader( "Content-Type" , "application/x-www-form-urlencoded" );
+    ajax.onreadystatechange = function () {
+        if( ajax.readyState == 4 ) {
+            if( ajax.status == 200 ) {
+                fnSucceed( ajax.responseText );
+            }
+            else {
+                fnFail( "HTTP请求错误！错误码："+ajax.status );
+            }
+        }
+        else {
+            fnLoading();
+        }
+    }
+    ajax.send( data );
+ 
+}
+		
+		
+	</script>
+</body>
+
+
+</html>
